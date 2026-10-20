@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Halloween/Halloween.vcxproj" Id="74d40421-8682-4033-8145-c675e5ca87ab" />
+</Solution>

@@ -1,0 +1,23 @@
+# Visual Studio settings and cache
+.vs/
+*.user
+*.suo
+
+# Build output (solution-level and per-project)
+x64/
+x86/
+Debug/
+Release/
+
+# Compiler / linker leftovers
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.ipch
+*.tlog
+*.log
+*.exe
+
+# Rendered output
+*.ppm
