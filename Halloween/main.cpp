@@ -2,6 +2,7 @@
 #include "vec3.h"
 #include "ray.h"
 #include "display.h"
+#include <algorithm>
 
 // Return the distance t to the nearest hit or -1 if the ray misses.
 float hit_sphere(const vec3& center, float radius, const ray& r)
@@ -51,7 +52,15 @@ vec3 ray_color(const ray& r)
 	{
 		vec3 hitPoint = r.at(t);
 		vec3 normal = (hitPoint - center) / radius;
-		return 0.5f * (normal + vec3(1.0f, 1.0f, 1.0f));
+
+		vec3 lightDir = unit_vector(vec3(-1.0f, 1.0f, 1.0f)); // upper left, in front
+
+		float diffuse = std::max(0.0f, dot(normal, lightDir));
+		float brightness = 0.20f + 0.80f * diffuse;
+
+		vec3 pumpkin(1.0f, 0.35f, 0.05f);
+		return brightness * pumpkin;
+
 	}
 
 	return sky_color(r);
