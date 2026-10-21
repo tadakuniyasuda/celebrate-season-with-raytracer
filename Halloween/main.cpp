@@ -49,7 +49,9 @@ vec3 ray_color(const ray& r)
 
 	if (t > 0.0f)
 	{
-		return vec3(1.0f, 0.35f, 0.05f);
+		vec3 hitPoint = r.at(t);
+		vec3 normal = (hitPoint - center) / radius;
+		return 0.5f * (normal + vec3(1.0f, 1.0f, 1.0f));
 	}
 
 	return sky_color(r);
