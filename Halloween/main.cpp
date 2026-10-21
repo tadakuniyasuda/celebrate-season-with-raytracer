@@ -3,28 +3,56 @@
 #include "ray.h"
 #include "display.h"
 
+// Return the distance t to the nearest hit or -1 if the ray misses.
+float hit_sphere(const vec3& center, float radius, const ray& r)
+{
+	vec3 oc = r.origin() - center;		// A - C
+
+	float a = dot(r.direction(), r.direction());
+	float b = 2.0f * dot(oc, r.direction());
+	float c = dot(oc, oc) - radius * radius;
+
+	float discriminant = b * b - 4 * a * c;
+	if (discriminant < 0.0f)
+	{
+		return -1.0f;
+	}
+
+	float sqrtD = std::sqrt(discriminant);
+	float t1 = (-b - sqrtD) / (2.0f * a);
+	float t2 = (-b + sqrtD) / (2.0f * a);
+
+	if (t1 > 0.001f) return t1;
+	if (t2 > 0.001f) return t2;
+	return -1.0f;
+}
+
+
 vec3 sky_color(const ray& r)
 {
 	vec3 dir = unit_vector(r.direction());
-
-
-	 Moon (does this ray point (almost) straight at the moon?)
-	vec3 moonDir = unit_vector(vec3(0.3f, 0.3f, -.3f));
-	if (dot(dir, moonDir) > 0.995f)
-	{
-		return vec3(1.0f, 0.95f, 0.7f);   // pale yellow
-	}
-
 
 	float t = 0.5f * (dir.y() + 1.0f);
 
 	vec3 horizon(0.60f, 0.15f, 0.48f);	// magenta
 	vec3 night(0.09f, 0.03f, 0.22f);		// deep violet
 
-	//vec3 horizon(1.0, 0.4, 0.0f);		// orange
-	//vec3 night(0.35, 0.0f, 0.3);		// dark blue
-
 	return (1.0f - t) * horizon + t * night;
+}
+
+vec3 ray_color(const ray& r)
+{
+	vec3 center(0.0f, 0.0f, -1.0f);
+	float radius = 0.5f;
+
+	float t = hit_sphere(center, radius, r);
+
+	if (t > 0.0f)
+	{
+		return vec3(1.0f, 0.35f, 0.05f);
+	}
+
+	return sky_color(r);
 }
 
 int main()
@@ -50,9 +78,9 @@ int main()
 			vec3 direction = lower_left + u * horizontal + v * vertical - origin;
 			ray r(origin, direction);
 
-			image[y * width + x] = sky_color(r);
+			image[y * width + x] = ray_color(r);
 		}
 
-	show_image("Halloween Ray Tracer - Part1", image, width, height);
+	show_image("Halloween Ray Tracer - Part2", image, width, height);
 	return 0;
 }
