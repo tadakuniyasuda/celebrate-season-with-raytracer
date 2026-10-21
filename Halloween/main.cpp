@@ -50,9 +50,32 @@ vec3 ray_color(const ray& r)
 
 	if (t > 0.0f)
 	{
+
+
 		vec3 hitPoint = r.at(t);
 		vec3 normal = (hitPoint - center) / radius;
 
+		float x = normal.x();
+		float y = normal.y();
+
+		// Width shrinks as y goes up -> a triangle pointing up.
+		float eyeWidth = 0.45f * (0.45f - y);
+
+		bool leftEye = y > 0.10f && y < 0.45f && std::fabs(x + 0.35f) < eyeWidth;
+		bool rightEye = y > 0.10f && y < 0.45f && std::fabs(x - 0.35f) < eyeWidth;
+
+		// A U-shaped curve: lowest at x = 0, rising toward the corners.
+		float smileCurve = -0.28f + 0.9f * x * x;
+
+		bool mouth = std::fabs(x) < 0.42f &&
+			y > -0.35f && y < -0.05f &&
+			std::fabs(y - smileCurve) < 0.04f;
+
+		bool face = normal.z() > 0.0f && (leftEye || rightEye || mouth);
+		if (face)
+			return vec3(1.0f, 0.92f, 0.35f);    // candle yellow
+
+		// light
 		vec3 lightDir = unit_vector(vec3(-1.0f, 1.0f, 1.0f)); // upper left, in front
 
 		float diffuse = std::max(0.0f, dot(normal, lightDir));
