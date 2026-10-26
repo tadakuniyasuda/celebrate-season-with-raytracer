@@ -1,0 +1,29 @@
+[33mcommit d6be286771d68c3ed711bb7b92a5e66976dce5c5[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: Tadakuni Yasuda <tadakuniyasuda@gmail.com>
+Date:   Wed Oct 21 23:09:27 2026 +0900
+
+    Add Eyes and Mouth
+
+[33mcommit 933f47400d3f9b42891bf35779b81515f79bf1c9[m
+Author: Tadakuni Yasuda <tadakuniyasuda@gmail.com>
+Date:   Wed Oct 21 23:01:19 2026 +0900
+
+    Add Lambertion light
+
+[33mcommit cbd7d92029262d3a459f96441a0597abe7f4bdbf[m
+Author: Tadakuni Yasuda <tadakuniyasuda@gmail.com>
+Date:   Wed Oct 21 22:56:36 2026 +0900
+
+    Add Normal
+
+[33mcommit 745d7529ab69a6b62886d551e3a1b7b587f1128a[m
+Author: Tadakuni Yasuda <tadakuniyasuda@gmail.com>
+Date:   Wed Oct 21 22:46:56 2026 +0900
+
+    Add Ray disc
+
+[33mcommit a90dd8f46409efcc69311ee9b98211c34a4b9b04[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: Tadakuni Yasuda <tadakuniyasuda@gmail.com>
+Date:   Wed Oct 21 08:52:52 2026 +0900
+
+    Add Halloween Part 1: SDL2 window, vec3/ray, purple sky

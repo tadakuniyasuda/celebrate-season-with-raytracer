@@ -3,8 +3,16 @@
 #include "ray.h"
 #include "display.h"
 #include <algorithm>
+#include <iostream>
+#include <chrono>
+#include <iostream>
 
-// Return the distance t to the nearest hit or -1 if the ray misses.
+struct Shade {
+	vec3 color;
+	vec3 glow;
+};
+
+// 火っとの最短距離tか、-1を返す。
 float hit_sphere(const vec3& center, float radius, const ray& r)
 {
 	vec3 oc = r.origin() - center;		// A - C
@@ -35,20 +43,32 @@ vec3 sky_color(const ray& r)
 
 	float t = 0.5f * (dir.y() + 1.0f);
 
-	vec3 horizon(0.60f, 0.15f, 0.48f);	// magenta
-	vec3 night(0.09f, 0.03f, 0.22f);		// deep violet
+	vec3 horizon(0.60f, 0.15f, 0.48f);		// 紫
+	vec3 night(0.09f, 0.03f, 0.22f);		// 濃い紫
 
 	return (1.0f - t) * horizon + t * night;
 }
 
-vec3 ray_color(const ray& r)
+Shade ray_color(const ray& r)
 {
 	vec3 center(0.0f, 0.0f, -1.0f);
 	float radius = 0.5f;
 
 	float t = hit_sphere(center, radius, r);
+	if (t <= 0.0f)                                  // 当たらない場合
+	{
+		vec3 dir = unit_vector(r.direction());
+		vec3 moonDir = unit_vector(vec3(0.3f, 0.3f, -0.3f));
 
-	if (t > 0.0f)
+		if (dot(dir, moonDir) > 0.995f)
+		{
+			vec3 moon(1.0f, 0.95f, 0.0f);
+			return { moon, moon };                  // 月 と bloom用
+		}
+		return { sky_color(r), vec3() };            // 空と無
+	}
+
+	if (t > 0.0f)									//当たる場合
 	{
 
 
@@ -58,13 +78,13 @@ vec3 ray_color(const ray& r)
 		float x = normal.x();
 		float y = normal.y();
 
-		// Width shrinks as y goes up -> a triangle pointing up.
+		// yが上がれば幅が狭くなる
 		float eyeWidth = 0.45f * (0.45f - y);
 
 		bool leftEye = y > 0.10f && y < 0.45f && std::fabs(x + 0.35f) < eyeWidth;
 		bool rightEye = y > 0.10f && y < 0.45f && std::fabs(x - 0.35f) < eyeWidth;
 
-		// A U-shaped curve: lowest at x = 0, rising toward the corners.
+		// U-型カーブ　(x = 0で一番下)
 		float smileCurve = -0.28f + 0.9f * x * x;
 
 		bool mouth = std::fabs(x) < 0.42f &&
@@ -73,20 +93,100 @@ vec3 ray_color(const ray& r)
 
 		bool face = normal.z() > 0.0f && (leftEye || rightEye || mouth);
 		if (face)
-			return vec3(1.0f, 0.92f, 0.35f);    // candle yellow
+		{
 
-		// light
-		vec3 lightDir = unit_vector(vec3(-1.0f, 1.0f, 1.0f)); // upper left, in front
+			vec3 candle(1.0f, 0.92f, 0.35f);    // 　黄色
+			return { candle, vec3(1.0f, 0.45f, 0.1f) };
+
+		}
+
+		
+
+		//　光
+		vec3 lightDir = unit_vector(vec3(0.0f, -1.0f, 0.0f)); 
 
 		float diffuse = std::max(0.0f, dot(normal, lightDir));
 		float brightness = 0.20f + 0.80f * diffuse;
 
 		vec3 pumpkin(1.0f, 0.35f, 0.05f);
-		return brightness * pumpkin;
+		return { brightness * pumpkin, vec3() };
 
 	}
 
-	return sky_color(r);
+	return { sky_color(r), vec3() };
+}
+// ウェイト radius=3 * sigma, d=0 
+std::vector<float> gaussian_weights(float sigma)
+{
+	int radius = int(std::ceil(3.0f * sigma));
+	//radius = 3 * sigma;
+	std::vector<float> w(radius + 1);
+	for (int d = 0; d <= radius; d++)
+		w[d] = std::exp(-(d * d) / (2.0f * sigma * sigma));
+	return w;
+}
+
+// 1D ブラー横、縦の順でブラー
+std::vector<vec3> blur_pass(const std::vector<vec3>& src,
+	int width, int height,
+	const std::vector<float>& weights,
+	bool horizontal)
+{
+	const int radius = int(weights.size()) - 1;
+	std::vector<vec3> dst(width * height);
+
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			vec3 sum;
+			float total = 0.0f;
+
+			for (int d = -radius; d <= radius; d++) {
+				int sx = horizontal ? x + d : x;
+				int sy = horizontal ? y : y + d;
+				if (sx < 0 || sx >= width || sy < 0 || sy >= height)
+					continue;                     // imageの外: skip
+
+				float w = weights[std::abs(d)];
+				sum += src[sy * width + sx] * w;
+				total += w;
+			}
+			dst[y * width + x] = sum / total;
+		}
+	}
+	return dst;
+}
+
+// Direct 2D Gaussian: (2r+1) x (2r+1) squareを各pixelが計算
+std::vector<vec3> blur_2d(const std::vector<vec3>& src,
+	int width, int height,
+	const std::vector<float>& weights)
+{
+	const int radius = int(weights.size()) - 1;
+	std::vector<vec3> dst(width * height);
+
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			vec3 sum;
+			float total = 0.0f;
+
+			for (int dy = -radius; dy <= radius; dy++) {
+				int sy = y + dy;
+				if (sy < 0 || sy >= height) continue;
+
+				for (int dx = -radius; dx <= radius; dx++) {
+					int sx = x + dx;
+					if (sx < 0 || sx >= width) continue;
+
+					// 2D ウェイト(horizontal weight x vertical weight)
+					float w = weights[std::abs(dx)] * weights[std::abs(dy)];
+					sum += src[sy * width + sx] * w;
+					total += w;
+				}
+			}
+			dst[y * width + x] = sum / total;
+		}
+	}
+	return dst;
 }
 
 int main()
@@ -94,15 +194,15 @@ int main()
 	const int width = 800;
 	const int height = 600;
 
-	// Camera
+	// カメラ
 	vec3 origin		(0.0f, 0.0f, 0.0f);
 	vec3 lower_left	(-2.0f, -1.5f, -1.0f);
 	vec3 horizontal(4.0f, 0.0f, 0.0f);
 	vec3 vertical(0.0f, 3.0f, 0.0f);
 
-	// Render into a buffer first, show it afterwords
+	// bufferにレンダーし、最後に表示
 	std::vector<vec3> image(width * height);
-
+	std::vector<vec3> glow(width * height);
 	for (int y = 0; y < height; y++)
 		for (int x = 0; x < width; x++)		
 		{
@@ -112,9 +212,22 @@ int main()
 			vec3 direction = lower_left + u * horizontal + v * vertical - origin;
 			ray r(origin, direction);
 
-			image[y * width + x] = ray_color(r);
-		}
+			Shade s = ray_color(r);
 
+			image[y * width + x] = s.color;
+			glow[y * width + x] = s.glow;
+		}
+	std::vector<float> weights = gaussian_weights(12.0f);
+	std::cout << "radius = " << weights.size() - 1 << "\n"; 
+
+	std::vector<vec3> blurred = blur_pass(glow, width, height, weights, true);
+	blurred = blur_pass(blurred, width, height, weights, false);
+
+	// bloom追加
+	const float bloomStrength = 1.5f;
+	for (int i = 0; i < width * height; i++)
+		image[i] += blurred[i] * bloomStrength;
 	show_image("Halloween Ray Tracer - Part2", image, width, height);
+
 	return 0;
 }
