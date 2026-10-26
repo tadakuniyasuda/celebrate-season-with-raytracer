@@ -102,7 +102,7 @@ Shade ray_color(const ray& r)
 
 		
 
-		//　光
+		//　光を追加
 		vec3 lightDir = unit_vector(vec3(0.0f, -1.0f, 0.0f)); 
 
 		float diffuse = std::max(0.0f, dot(normal, lightDir));
@@ -120,6 +120,7 @@ std::vector<float> gaussian_weights(float sigma)
 {
 	int radius = int(std::ceil(3.0f * sigma));
 	//radius = 3 * sigma;
+	// 自分自身を含め(radius + 1)個のスロット
 	std::vector<float> w(radius + 1);
 	for (int d = 0; d <= radius; d++)
 		w[d] = std::exp(-(d * d) / (2.0f * sigma * sigma));
