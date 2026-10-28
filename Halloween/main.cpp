@@ -91,6 +91,18 @@ vec3 sky_color(const ray& r)
 	return (1.0f - t) * horizon + t * night;
 }
 
+struct Pumpkin {
+	vec3 center;
+	float radius;
+};
+
+const std::vector<Pumpkin> pumpkins = {
+	{vec3(0.0f, 0.0f, -1.0f), 0.5f},
+	{vec3(-1.2f, -0.3f, -1.8f), 0.35f},
+	{vec3(1.1f, -0.35f, -1.5f), 0.3f},
+	{vec3(0.55f, -0.4f, -0.75f), 0.12f},
+};
+
 
 // ------------------------------------------------------------
 //  1本のレイが「何を見るか」を決める関数
@@ -98,35 +110,44 @@ vec3 sky_color(const ray& r)
 // ------------------------------------------------------------
 Shade ray_color(const ray& r)
 {
-	// カボチャ（球）の中心と半径
-	vec3 center(0.0f, 0.0f, -1.0f);
-	float radius = 0.5f;
+	// このrayがhitする一番近いかぼちゃを見つける
+	float closestT = 1e30f;  // とてもとても遠い
+	int hitIndex = -1;		 // -1 = hitしない
 
-	float t = hit_sphere(center, radius, r);
+	for (int i = 0; i < (int)pumpkins.size(); i++)
+	{
+		float t = hit_sphere(pumpkins[i].center, pumpkins[i].radius, r);
+		if (t > 0.0f && t < closestT)
+		{
+			closestT = t;
+			hitIndex = i;
+		}
+	}
 
 	// ========== カボチャに当たらなかった場合: 月 か 夜空 ==========
-	if (t <= 0.0f)
+	if (hitIndex < 0)
 	{
-		vec3 dir = unit_vector(r.direction());
-		vec3 moonDir = unit_vector(vec3(0.3f, 0.3f, -0.3f));  // 月の「方向」（位置ではない）
+			vec3 dir = unit_vector(r.direction());
+			vec3 moonDir = unit_vector(vec3(0.3f, 0.26f, -0.3f));  // 月の「方向」（位置ではない）
 
-		// 内積 = 2つの向きがどれだけ同じか（1 = 完全に同じ向き）
-		// 0.995 より大きい = 月の方向からほぼズレていない → 月のピクセル
-		// ※ 月は円を「描いて」いない。条件を満たしたピクセルの集まりが円になる
-		if (dot(dir, moonDir) > 0.995f)
-		{
-			vec3 moon(1.0f, 0.95f, 0.0f);
-			return { moon, moon };  // 見える色も、出す光も月の色 → 月にも光の輪がつく
-		}
+			// 内積 = 2つの向きがどれだけ同じか（1 = 完全に同じ向き）
+			// 0.995 より大きい = 月の方向からほぼズレていない → 月のピクセル
+			// ※ 月は円を「描いて」いない。条件を満たしたピクセルの集まりが円になる
+			if (dot(dir, moonDir) > 0.98f)
+			{
+				vec3 moon(1.0f, 0.95f, 0.0f);
+				return { moon, moon };  // 見える色も、出す光も月の色 → 月にも光の輪がつく
+			}
 
-		return { sky_color(r), vec3() };  // 普通の空: 光は出さない
+			return { sky_color(r), vec3() };  // 普通の空: 光は出さない
 	}
 
 	// ========== カボチャに当たった場合 ==========
-	// 当たった点と、その点の法線（表面が向いている方向）
-	vec3 hitPoint = r.at(t);
+	const Pumpkin& p = pumpkins[hitIndex];
+	// 当たった点と、その点の法線（表面が向いている方向）s
+	vec3 hitPoint = r.at(closestT);
 	// 球の法線 = 中心から当たった点への向き。(半径で割ると長さ1になる)
-	vec3 normal = (hitPoint - center) / radius;
+	vec3 normal = (hitPoint - p.center) / p.radius;
 
 	// ---------- 顔を彫る ----------
 	// カメラ側から見ると、法線の x, y は顔の上の 2D 座標として使える
