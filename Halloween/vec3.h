@@ -5,8 +5,7 @@ class vec3 {
 public:
     float e[3];
 
-    // The book's version leaves e[] uninitialised, so a vec3 you forgot to set holds random garbage. 
-    // Starting from zero costs nothing and prevents a whole class of strange-looking bugs.
+    // 0をデフォルトで入れる
     vec3() : e{ 0.0f, 0.0f, 0.0f } {}
     vec3(float x, float y, float z) : e{ x, y, z } {}
 
@@ -26,6 +25,14 @@ public:
     float length() const {
         return std::sqrt(e[0] * e[0] + e[1] * e[1] + e[2] * e[2]);
     }
+
+
+
+    // -v flips the direction 
+  //  vec3 operator-() const {
+		//return vec3(-e[0], -e[1], -e[2]);
+  //  }
+    vec3 operator -() const { return vec3(-e[0], -e[1], -e[2]); }
 };
 
 // Without inline, each file gets its own copy of operator+, and the linker fails with "already defined".
@@ -57,3 +64,9 @@ inline float dot(const vec3& a, const vec3& b) {
 // For unit vectors, it gives 1 when they point the same way, 
 // 0 when they're perpendicular, and −1 when they're opposite.
 inline vec3 unit_vector(const vec3& v) { return v / v.length(); }
+
+
+// colour × colour, one channel at a time
+inline vec3 operator*(const vec3& a, const vec3& b) {
+    return vec3(a.e[0] * b.e[0], a.e[1] * b.e[1], a.e[2] * b.e[2]);
+}
