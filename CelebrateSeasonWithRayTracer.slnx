@@ -3,6 +3,7 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Project Path="Autumn/Autumn.vcxproj" Id="d6127678-6336-45d2-9bee-780af6b1ac93" />
   <Project Path="Halloween/Halloween.vcxproj" Id="74d40421-8682-4033-8145-c675e5ca87ab" />
   <Project Path="Practice/Practice.vcxproj" Id="3957588f-2255-4a0f-8dd1-d88e31de9a3a" />
 </Solution>
